@@ -4,9 +4,10 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "cmd.h"
+#include "libbtd.h"
+#include "cmd_list.h"
 
-int verbosity = 0;
+struct addrinfo *addr;
 
 const char *argp_program_version = "btdc 0.1";
 const char *argp_program_bug_address = "<mart@martlubbers.net>";
@@ -15,6 +16,7 @@ static char doc[] = "btdc -- A btd client";
 static char args_doc[] = "[global opts] [cmd [cmd opts]]";
 
 static struct argp_option options[] = {
+	{"host",'h', "ADDRESS", 0, "Increase verbosity", 0},
 	{"verbose",'v', 0, 0, "Increase verbosity", 0},
 	{"quiet",'q', 0, 0, "Decrease verbosity", 0},
 	{0}
@@ -24,11 +26,15 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 {
 	switch(key)
 	{
+		case 'h':
+	//		btd_free_addrinfo(addr);
+			addr = btd_get_addrinfo(arg);
+			break;
 		case 'v':
-			verbosity = verbosity == 3 ? 3 : verbosity+1;
+			btd_incr_log();
 			break;
 		case 'q':
-			verbosity = verbosity == 0 ? 0 : verbosity-1;
+			btd_decr_log();
 			break;
 		case ARGP_KEY_ARG:
 			if(strcasecmp("list", arg) == 0 || strcasecmp("ls", arg)) {
@@ -37,7 +43,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 				argp_error(state, "%s is not a valid command", arg);
 			}
 			break;
-
 		default:
 			return ARGP_ERR_UNKNOWN;
 	}
@@ -54,6 +59,22 @@ static struct argp argp = {
 	.argp_domain=NULL};
 
 int main(int argc, char **argv){
-	argp_parse(&argp, argc, argv, 0, 0, NULL);
+	FILE *fd;
+
+	char *dp = btd_get_data_path();
+	char *sp = safe_strcat(2, dp, "/btd.socket");
+	addr = btd_get_addrinfo(sp);
+	safe_free(2, sp, dp);
+
+	btd_init_log();
+	argp_parse(&argp, argc, argv, ARGP_IN_ORDER, 0, NULL);
+
+	if ((fd = btd_connect(addr)) == NULL){
+		return EXIT_FAILURE;
+	}
+
+	free(btd_bye(fd));
+	safe_fclose(fd);
+
 	return EXIT_SUCCESS;
 }

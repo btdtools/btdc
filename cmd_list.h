@@ -1,5 +1,5 @@
-#ifndef CMD_H
-#define CMD_H
+#ifndef CMD_LIST_H
+#define CMD_LIST_H
 
 #include <argp.h>
 
