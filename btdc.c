@@ -7,6 +7,8 @@
 #include "libbtd.h"
 #include "cmd_list.h"
 
+extern char *version;
+
 struct addrinfo *addr;
 
 const char *argp_program_version = "btdc 0.1";
@@ -72,6 +74,7 @@ int main(int argc, char **argv){
 	if ((fd = btd_connect(addr)) == NULL){
 		return EXIT_FAILURE;
 	}
+	btd_log(1, "Connected to a btd version %s\n", version);
 
 	free(btd_bye(fd));
 	safe_fclose(fd);
